@@ -15,23 +15,28 @@ from map_creation import create_single_map, create_maps_for_tours
 # Load env variables e.g. API-Key
 load_dotenv()
 
-
+# --------------------------------------------------
 # Init: Global Cache
+# --------------------------------------------------
 geocoding_cache = GeocodingCache()
-
-
-API_KEY = os.getenv("API_KEY")
-gmaps = googlemaps.Client(key=API_KEY)
-
-
-
-
 
 # --------------------------------------------------
 # Streamlit UI
 # --------------------------------------------------
 st.set_page_config(page_title="Tour Routen Generator", layout="wide")
 st.title("🚚 Touren aus Word-Dokumenten extrahieren & Karten erstellen")
+
+# Sidebar API-Key Eingabe
+st.sidebar.header("🔑 API Einstellungen")
+default_api_key = os.getenv("API_KEY", "")
+api_key_input = st.sidebar.text_input("Google Maps API Key", value=default_api_key, type="password")
+
+if not api_key_input:
+    st.warning("Bitte gib einen gültigen Google Maps API Key ein.")
+    st.stop()
+
+# Google Maps Client initialisieren
+gmaps = googlemaps.Client(key=api_key_input)
 
 # Cache Status anzeigen
 if hasattr(geocoding_cache, 'cache'):
@@ -88,9 +93,6 @@ if uploaded_file:
         if "tour_index" not in st.session_state:
             st.session_state.tour_index = 0
 
-
         st.write(f"Karte {current_idx + 1}/{len(st.session_state.maps)}")
         map_html = st.session_state.maps[current_idx]._repr_html_()
         components.v1.html(map_html, height=600, width=800)
-
-
