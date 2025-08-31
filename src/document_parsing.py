@@ -1,6 +1,7 @@
 from docx import Document
 import pandas as pd
 import re
+
 def document_parser(path_to_word):
     print("📄 Start Word document parsing...")
     doc = Document(path_to_word)
@@ -37,6 +38,21 @@ def document_parser(path_to_word):
                     list_of_street_names.append(" ".join(entry_elements[2:-2]))
                 except Exception:
                     continue
+
+            # 🚩 Endstation hinzufügen, wenn sie noch nicht enthalten ist
+            if not (
+                list_of_children and
+                list_of_children[-1] == "Maria-Stern-Schule" and
+                list_of_street_names[-1] == "Felix-Dahn-Str." and
+                list_of_street_numbers[-1] == "11" and
+                list_region[-1] == "Würzburg"
+            ):
+                list_of_children.append("Maria-Stern-Schule")
+                list_of_street_names.append("Felix-Dahn-Str.")
+                list_of_street_numbers.append("11")
+                list_region.append("Würzburg")
+
+            # ✅ Tour speichern
             tour_df["tour_id"].append(l)
             tour_df["children_on_tour"].append(list_of_children)
             tour_df["Street"].append(list_of_street_names)
@@ -44,7 +60,7 @@ def document_parser(path_to_word):
             tour_df["Region"].append(list_region)
 
             if list_of_children:
-                print(f"✅ Tour {l}: {len(list_of_children)} Kinder gefunden")
+                print(f"✅ Tour {l}: {len(list_of_children)} Kinder (inkl. Endstation) gefunden")
 
     result_df = pd.DataFrame(tour_df)
     print(f"🎉 Parsing abgeschlossen: {len(result_df)} Touren extrahiert")

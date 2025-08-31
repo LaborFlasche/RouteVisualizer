@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 from document_parsing import document_parser
 import os
 from map_creation import create_single_map, create_maps_for_tours
+import asyncio
+import base64
+from utils import save_map_as_png
 
 # Load env variables e.g. API-Key
 load_dotenv()
@@ -38,11 +41,16 @@ if not api_key_input:
 # Google Maps Client initialisieren
 gmaps = googlemaps.Client(key=api_key_input)
 
+
+
+
 # Cache Status anzeigen
 if hasattr(geocoding_cache, 'cache'):
     st.sidebar.write(f"📍 Geocoding Cache: {len(geocoding_cache.cache)} Einträge")
 
 uploaded_file = st.file_uploader("Ziehe dein Word-Dokument hierher", type=["docx"])
+
+
 
 if uploaded_file:
     with st.spinner("📑 Lese Tabellen aus Word..."):
@@ -93,6 +101,18 @@ if uploaded_file:
         if "tour_index" not in st.session_state:
             st.session_state.tour_index = 0
 
+        current_idx = st.session_state.tour_index
         st.write(f"Karte {current_idx + 1}/{len(st.session_state.maps)}")
         map_html = st.session_state.maps[current_idx]._repr_html_()
         components.v1.html(map_html, height=600, width=800)
+
+        # Download-Button für PNG
+        if st.button("📥 Karte als PNG herunterladen"):
+            file_path = asyncio.run(
+                save_map_as_png(st.session_state.maps[current_idx])
+            )
+            with open(file_path, "rb") as f:
+                png_data = f.read()
+                b64 = base64.b64encode(png_data).decode()
+                href = f'<a href="data:file/png;base64,{b64}" download="karte.png">👉 Download PNG</a>'
+                st.markdown(href, unsafe_allow_html=True)
