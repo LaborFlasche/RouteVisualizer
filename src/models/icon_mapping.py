@@ -1,0 +1,41 @@
+icons = {
+    "Bagger": "🚜",
+    "Baum": "🌳",
+    "Blitz": "⚡",
+    "Feuerwehr": "🚒",
+    "Frosch": "🐸",
+    "Gespenst": "👻",
+    "Hexe": "🧙‍♀️",
+    "Hund": "🐶",
+    "Indianer": "🪶",   # no direct emoji, feather is closest
+    "Kaktus": "🌵",
+    "Kamel": "🐪",
+    "Katus": "🌵",      # synonym for Kaktus
+    "Kirsche": "🍒",
+    "Kleeblatt": "☘️",
+    "Krokodil": "🐊",
+    "Kängeru": "🦘",   # assuming typo, maps to Kangaroo
+    "Känguru": "🦘",
+    "Küken": "🐥",
+    "Luftballon": "🎈",
+    "Maulwurf": "🐹",  # no mole emoji, hamster is closest
+    "Motorrad": "🏍️",
+    "Pferd": "🐴",
+    "Pilz": "🍄",
+    "Pilze": "🍄",
+    "Pinguin": "🐧",
+    "Puzzle": "🧩",
+    "Ritter": "🤺",
+    "Roboter": "🤖",
+    "Schiff": "🚢",
+    "Schildkröte": "🐢",
+    "Schlange": "🐍",
+    "Schnecke": "🐌",
+    "Schneemann": "⛄",
+    "Seehund": "🦭",   # seal
+    "Skateboard": "🛹",
+    "Tintenfisch": "🦑",
+    "Traube": "🍇",
+    "Wal": "🐋",
+    "Würfel": "🎲",
+}

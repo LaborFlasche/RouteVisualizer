@@ -1,0 +1,9 @@
+[theme]
+# Grundfarben
+primaryColor = "black"          # Gelb (für Buttons, Highlights)
+backgroundColor = "#FFFFFF"       # Weißer Hintergrund
+secondaryBackgroundColor = "#F5F5F5"  # Hellgrau für Container
+textColor = "#000000"             # Schwarzer Text
+
+# Schriftarten
+font = "sans serif"  # wirkt modern & ähnlich wie auf der Website
