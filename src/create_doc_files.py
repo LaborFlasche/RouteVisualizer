@@ -6,6 +6,8 @@ from docx.oxml.ns import qn
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_ORIENT
 from io import BytesIO
+from docx.shared import Pt
+
 
 
 
@@ -65,9 +67,9 @@ def turn_df_into_word(tour_id_to_df: dict, google_distances=None) -> str:
         # Define Header with enumeration
         hdr_cells = table.rows[0].cells
         hdr_cells[0].text = ""
-        for i, tour_id in enumerate(tours_block, start=start + 1):  # <-- start offset added here
-            hdr_cells[i - start].text = str(i)  # <-- adjust column index
-            p = hdr_cells[i - start].paragraphs[0]
+        for i in range(1, num_cols):
+            hdr_cells[i].text = str(i)
+            p = hdr_cells[i].paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             if p.runs:
                 p.runs[0].bold = True
@@ -132,10 +134,19 @@ def turn_df_into_word(tour_id_to_df: dict, google_distances=None) -> str:
             for i in range(min(9, len(children))):
                 cell = table.rows[i + 2].cells[col_idx]
                 if all(element[i] == "Platz ist frei!" for element in [children, streets, numbers]):
-                    text = f" \n \n "
+                    text = " \n \n "
                 else:
                     text = f"{children[i]}\n{streets[i]} {numbers[i]}\n{regions[i]}"
-                cell.text = text
+
+                # Clear existing text (important!)
+                for p in cell.paragraphs:
+                    p.clear() if hasattr(p, "clear") else None
+
+                # Add text manually so we can control formatting
+                p = cell.paragraphs[0]
+                run = p.add_run(text)
+                run.font.size = Pt(10)  # Adjust size here
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT  # Or CENTER, if you prefer
 
             # KM-besetzt in grüne Zelle
             green_cell = table.rows[12].cells[col_idx]
