@@ -65,11 +65,12 @@ def turn_df_into_word(tour_id_to_df: dict, google_distances=None) -> str:
         table.autofit = False
 
         # Define Header with enumeration
+        # Define Header with enumeration (continues across pages)
         hdr_cells = table.rows[0].cells
         hdr_cells[0].text = ""
-        for i in range(1, num_cols):
-            hdr_cells[i].text = str(i)
-            p = hdr_cells[i].paragraphs[0]
+        for col_idx, tour_id in enumerate(tours_block, start=start + 1):
+            hdr_cells[col_idx - start].text = str(col_idx)
+            p = hdr_cells[col_idx - start].paragraphs[0]
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             if p.runs:
                 p.runs[0].bold = True
