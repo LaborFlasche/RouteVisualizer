@@ -1,10 +1,10 @@
-from docx import Document
+import logging
 import pandas as pd
 import re
-from utils import read_pdf_content
-from models.icon_mapping import icons
-import re
 import streamlit as st
+from src.models.icon_mapping import icons
+from src.utils.utils import read_pdf_content
+
 
 
 def _get_regions_from_pdf_string(pdf_string: str) -> list:
@@ -57,7 +57,7 @@ def get_table_from_pdf_content(pdf_content: str, tour_dict: dict) -> pd.DataFram
         tour_text = page.split("Schuljahr:")[1].split("Ende Tour")[0]
         blocks = re.split(r'(?=[A-ZÄÖÜ][a-zäöüß]+,\s*[A-ZÄÖÜ][a-zäöüß]+)', tour_text)
 
-        name_l, street_l, number_l, plz_l, region_l = [], [], [], [], _get_regions_from_pdf_string(page)
+        forname_l, surname_l, housenumber_l, street_l, postcode_l, region_l = [], [], [], [], [], _get_regions_from_pdf_string(page)
 
         for block in blocks:
             if not block.strip():
@@ -77,46 +77,49 @@ def get_table_from_pdf_content(pdf_content: str, tour_dict: dict) -> pd.DataFram
                 street = m_addr.group(1).strip()
                 number = m_addr.group(2).strip()
                 plz = m_addr.group(3).strip()
-                city = m_addr.group(4).strip()
-                region = m_addr.group(5).strip() if m_addr.group(5) else None
 
             else:
-                street = number = plz = full_region = None
+                street = number = plz = None
 
             if not (name and street and number and plz):
                 continue
-
-            name_l.append(name)
+            surname, forname = name.split(",")
+            forname = forname.strip()
+            surname = surname.strip()
+            forname_l.append(forname), surname_l.append(surname)
             street_l.append(street)
-            number_l.append(number)
-            plz_l.append(plz)
+            housenumber_l.append(number)
+            postcode_l.append(plz)
 
         # Auffüllen bis 8
-        for list_element in [name_l, street_l, number_l, plz_l, region_l]:
+        for list_element in [forname_l, surname_l, street_l, housenumber_l, postcode_l, region_l]:
             while len(list_element) < 8:
                 list_element.append("Platz ist frei!")
 
         # Schule hinzufügen
         if not (
-            name_l and
-            name_l[-1] == "Maria-Stern-Schule" and
+            forname_l and
+            forname_l[-1] == "Maria-Stern-Schule" and
+            surname_l[-1] == "Maria-Stern-Schule" and
             street_l[-1] == "Felix-Dahn-Str." and
-            number_l[-1] == "11" and
-            plz_l[-1] == "97072"
+            housenumber_l[-1] == "11" and
+            postcode_l[-1] == "97072"
         ):
-            name_l.append("Maria-Stern-Schule")
+            forname_l.append("Maria-Stern-Schule")
+            surname_l.append("Maria-Stern-Schule")
             street_l.append("Felix-Dahn-Str.")
-            number_l.append("11")
+            housenumber_l.append("11")
             region_l.append("Würzburg")
-            plz_l.append("97072")
+            postcode_l.append("97072")
 
         # Speichern
 
-        tour_dict["children_on_tour"] = name_l
-        tour_dict["Street"] = street_l
-        tour_dict["Number"] = number_l
-        tour_dict["PLZ"] = plz_l
-        tour_dict["Region"] = region_l
+        tour_dict["fornames"] = forname_l
+        tour_dict["surnames"] = surname_l
+        tour_dict["streets"] = street_l
+        tour_dict["housenumbers"] = housenumber_l
+        tour_dict["postcodes"] = postcode_l
+        tour_dict["regions"] = region_l
 
         tour_id_to_df[id_cleaned] = {"tour_df": pd.DataFrame(tour_dict), "symbol": symbol, "km_besetzt": int(km_besetzt)}
 
@@ -130,16 +133,18 @@ def pdf_parser(path_to_pdf) -> pd.DataFrame:
     """
     pdf_content = read_pdf_content(path_to_pdf)
 
-    tour_dict = {"children_on_tour": [], "Street": [], "Number": [], "PLZ": [],  "Region": []}
+    tour_dict = {
+        "fornames": [],
+        "surnames": [],
+        "streets": [],
+        "housenumbers": [],
+        "postcodes": [],
+        "regions": []
+    }
     tour_id_to_df = get_table_from_pdf_content(pdf_content, tour_dict)
     st.session_state["tour_id_to_df"] = tour_id_to_df
     st.session_state["current_idx"] = list(tour_id_to_df.keys())[0]
-    print(f"🎉 Parsing abgeschlossen: {len(list(tour_id_to_df.keys()))} Touren extrahiert")
+    logging.info(f"🎉 Parsing abgeschlossen: {len(list(tour_id_to_df.keys()))} Touren extrahiert")
     return tour_id_to_df
 
 
-
-
-
-if __name__ == "__main__":
-    print(pdf_parser("/Users/felix/Desktop/Private Projects/MariaSternMapsCreator/data/tours/Tourenpläne2025-Daily.pdf"))

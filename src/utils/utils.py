@@ -2,6 +2,7 @@ import pandas as pd
 from pyppeteer import launch
 from PyPDF2 import PdfReader
 import streamlit as st
+import math
 
 async def save_map_as_png(map_obj, file_path="map.png"):
     """Rendert eine Folium-Karte als PNG mit pyppeteer."""
@@ -14,6 +15,34 @@ async def save_map_as_png(map_obj, file_path="map.png"):
     await page.screenshot({"path": file_path})
     await browser.close()
     return file_path
+
+
+def logical_round(number: float) -> int:
+    """Round a number logically: < 0.5 -> down, >= 0.5 -> up."""
+    if number - math.floor(number) < 0.5:
+        return math.floor(number)
+    else:
+        return math.ceil(number)
+def show_optimized_informations(optimized_info: dict = {}):
+    """
+    Display optimized information in Streamlit columns as metrics.
+
+    Args:
+        optimized_info (dict): Dictionary containing optimization data.
+    """
+    if not optimized_info:
+        st.warning("No optimization information provided.")
+        return
+
+    # Create one column per key in the dictionary
+    columns = st.columns(len(optimized_info))
+
+    for idx, (key, value) in enumerate(optimized_info.items()):
+        if key == "total_improvement":
+            columns[idx].metric(label=value['name'], value=f"{value['value']} m")
+        else:
+            # Display other metrics without arrows
+            columns[idx].metric(label=value["name"], value=value["value"])
 
 def read_pdf_content(pdf_path: str) -> str:
     """Helper method to read text content from a PDF file."""

@@ -1,5 +1,6 @@
 from threading import Lock
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
+import logging
 
 
 class GeocodingCache:
@@ -10,20 +11,20 @@ class GeocodingCache:
     def get_location(self, gmaps, address: str) -> Optional[Dict]:
         with self.lock:
             if address in self.cache:
-                print(f"✅ Cache Hit on: {address}")
+                logging.info(f"✅ Cache Hit on: {address}")
                 return self.cache[address]
 
         try:
-            print(f"🔍 Geocoding: {address}")
+            logging.info(f"🔍 Geocoding: {address}")
             result = gmaps.geocode(address)
             if result:
                 location = result[0]['geometry']['location']
                 with self.lock:
                     self.cache[address] = location
-                print(f"✅ Geocoded: {address} -> {location['lat']:.4f}, {location['lng']:.4f}")
+                logging.info(f"✅ Geocoded: {address} -> {location['lat']:.4f}, {location['lng']:.4f}")
                 return location
         except Exception as e:
-            print(f"❌ Error when Geocoding adress: {address} with: {e}")
+            logging.error(f"❌ Error when Geocoding adress: {address} with: {e}")
         return None
 
 
@@ -40,8 +41,8 @@ class GeocodingCache:
             else:
                 uncached_addresses.append(address)
 
-        print(f"📍 {len(addresses) - len(uncached_addresses)}/{len(addresses)} Adressen aus Cache")
-        print(f"🔍 {len(uncached_addresses)} neue API Calls erforderlich")
+        logging.info(f"📍 {len(addresses) - len(uncached_addresses)}/{len(addresses)} Adressen aus Cache")
+        logging.info(f"🔍 {len(uncached_addresses)} neue API Calls erforderlich")
 
         # Geocodiere nur uncached Adressen
         for i, address in enumerate(uncached_addresses):
@@ -51,6 +52,6 @@ class GeocodingCache:
 
             # Progress Update
             if (i + 1) % 5 == 0 or i == len(uncached_addresses) - 1:
-                print(f"⏳ Geocoding Progress: {i + 1}/{len(uncached_addresses)}")
+                logging.info(f"⏳ Geocoding Progress: {i + 1}/{len(uncached_addresses)}")
 
         return locations
