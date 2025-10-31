@@ -84,7 +84,7 @@ class SessionManager:
             if key not in st.session_state:
                 st.session_state[key] = default_value
 
-        with open("/Users/felix/PycharmProjects/RouteVisualizer/addresses.txt", "r") as f:
+        with open(os.getenv("ADRESS_PATH"), "r") as f:
             import json
             st.session_state[SessionStateKeys.GEOCODING_CACHE] = json.load(f)
 

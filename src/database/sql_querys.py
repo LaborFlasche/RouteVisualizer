@@ -1,29 +1,41 @@
 from enum import Enum
 
-class PostgresQueries(Enum):
-    GET_USER_BY_NAME_AND_PASSWORD = "get_user_by_name_and_password"
 
-    def build_query(self, connection, **params):
-        """
-        Build and execute a Supabase Postgres query based on the enum type.
-        :param connection: Supabase client or table connection
-        :param params: query parameters (like username, password)
-        :return: query result
-        """
-        if self == PostgresQueries.GET_USER_BY_NAME_AND_PASSWORD:
-            username = params.get("username")
-            password = params.get("password")
-            if username is None or password is None:
-                raise ValueError("Both 'username' and 'password' must be provided.")
+class SQLQueries(Enum):
+    GET_USER_BY_NAME_and_PASSWORD = "SELECT * FROM user_logins WHERE username=%s AND password=%s"
+    GET_ID_OF_USER = "SELECT id FROM user_logins WHERE username=%s"
+    GET_HISTORY_OF_USER_ID = "SELECT * FROM tours WHERE user_id=%s ORDER BY created_at DESC"
 
-            # Example Supabase query
-            return (
-                connection
-                .table("user_logins")
-                .select("*")
-                .eq("username", username)
-                .eq("hashed_password", password)
-                .execute()
-            )
+    GET_CHILDREN_INSTANCE = """
+        SELECT surname, forname, street, housenumber, postcode 
+        FROM children
+        WHERE surname IN ({surnames})
+        AND postcode IN ({plzs})
+    """
 
 
+
+    INSERT_NEW_TOUR = """
+        INSERT INTO tours (titelname, user_id, total_distance_malt, total_distance_maps, created_at)
+        VALUES (%s, %s, %s, %s, NOW())
+    """
+
+    INSERT_NEW_SINGLE_TOUR = """
+        INSERT INTO single_tour (tour_id, tour_symbol, tour_number, total_distance_malt, total_distance_maps) 
+        VALUES (%s, %s, %s, %s, %s)
+    """
+    INSERT_NEW_CHILDREN = """
+        INSERT INTO children (surname, forname, street, housenumber, postcode, region) 
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    INSERT_NEW_TOUR_ASSIGNMENT = """
+        INSERT INTO tour_assignments (tour_id, children_id, stop_order) 
+        VALUES (%s, %s, %s)
+    """
+
+    def get_query(self):
+        return self.value
+
+    def format_query(self, **kwargs):
+        return self.value.format(**kwargs)

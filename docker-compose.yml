@@ -1,0 +1,47 @@
+services:
+  osrm:
+    image: osrm/osrm-backend
+    container_name: osrm-backend
+    command: osrm-routed --algorithm mld /data/bayern-latest.osrm
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+  streamlit:
+    image: routestreamlit-app
+    container_name: routevisualizer-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      GMAPS_API_KEY: AIzaSyC-lLEp2kT2xxJ-oD2d2W0UPqAPEjQrX0Q
+      GEOCODED_URL: "http://routvisualizer-mysql:8080"
+      OSMR_MAPS_URL: "http://osrm-backend:5000/route/v1/driving/"
+      OSMR_URL: "http://osrm-backend:5000/route/v1/driving/{},{};{},{}?steps=false"
+      CODING_TYPE: GM
+      HOST: routvisualizer-mysql
+      DB_USER: root
+      DB_PASSWORD: "llE;voM[E~3:7k{9vQW?0C%"
+      DB_NAME: routevisualizer
+      DB_PORT: 3306
+      ADRESS_PATH: "/app/addresses.txt"
+    depends_on:
+      - osrm
+      - mysql
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: routvisualizer-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "llE;voM[E~3:7k{9vQW?0C%"
+      MYSQL_DATABASE: routevisualizer
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

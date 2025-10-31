@@ -1,60 +1,82 @@
+import pymysql
 import streamlit as st
-from src.database.sql_querys import PostgresQueries
-from supabase import create_client, Client
+import os
+import time
+@st.cache_resource
+def get_db_connection():
+    """Generate and cache a DB connection."""
+    if "db_instance" not in st.session_state:
+        db = MySQL_DB(
+            host=os.getenv("HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME")
+        )
+        st.session_state["db_instance"] = try_connect_with_retry(db)
+        return st.session_state["db_instance"]
+    else:
+        db = st.session_state["db_instance"]
+        if db.get_current_connection() is None:
+            st.session_state["db_instance"] = try_connect_with_retry(db)
+        return st.session_state["db_instance"]
 
-class Supabase_DB:
-    def __init__(self):
-        # Load secrets from Streamlit
-        self.sb_key = st.secrets["connections"]["supabase"]["SUPABASE_KEY"]
-        self.sb_url = st.secrets["connections"]["supabase"]["SUPABASE_URL"]
-        self.connection: Client | None = None
+def get_current_db_instance():
+    if "db_instance" not in st.session_state:
+        st.warning("Not Database instance currently connected!")
+        return
+    return st.session_state["db_instance"]
 
-    # Cache the Supabase client; note _self instead of self
-    @st.cache_resource
-    def init_connection(_self) -> Client:
-        return create_client(supabase_url=_self.sb_url, supabase_key=_self.sb_key)
+class MySQL_DB:
+    def __init__(self, host, user, password, database):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
+        self.connection = None
 
     def connect(self):
         if self.connection:
+            print("Already connected to a database connection - disconnecting first.")
             self.disconnect()
         try:
-            # Use _self convention only inside cached function
-            self.connection = self.init_connection()
-            print("Connection to Supabase database established.")
-        except Exception as err:
-            print(f"Error connecting to Supabase: {err}")
+            self.connection = pymysql.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database,
+                port=int(os.getenv("DB_PORT", 3306))
+            )
+            print("Connection to MySQL database established.")
+        except pymysql.Error as err:
+            print(f"Error: {err}")
             self.connection = None
-
-    def disconnect(self):
-        if self.connection:
-            self.connection = None
-            print("Supabase database connection closed.")
 
     def get_current_connection(self):
         return self.connection
 
-    # Cached query execution; _self avoids hashing issues
-    @st.cache_data(ttl=600)
-    def run_query(_self, query_type: PostgresQueries, **params):
-        if _self.connection is None:
-            _self.connect()
-            if _self.connection is None:
-                raise RuntimeError("Supabase connection could not be established.")
-        return query_type.build_query(_self.connection, **params)
+    def disconnect(self):
+        if self.connection:
+            self.connection.close()
+            print("MySQL database connection closed.")
 
+def try_connect_with_retry(db_instance, initial_delay=5):
+    """Try to connect to the database with exponential backoff."""
+    delay = initial_delay
+    max_retries = 5
+    retries = 0
 
-# Helper to manage DB instance in session_state
-def get_current_db_instance() -> Supabase_DB | None:
-    try:
-        if "db_instance" not in st.session_state:
-            db_instance = Supabase_DB()
-            db_instance.connect()
-            st.session_state["db_instance"] = db_instance
+    placeholder = st.empty()
+
+    while retries < max_retries:
+        db_instance.connect()
+        if db_instance.get_current_connection() is not None:
+            return db_instance
         else:
-            db_instance = st.session_state["db_instance"]
-            if db_instance.connection is None:
-                db_instance.connect()
-        return st.session_state["db_instance"]
-    except Exception as e:
-        st.error(f"Fehler beim Herstellen der Datenbankverbindung: {e}")
-        return None
+            placeholder.warning(f"Connection failed. Retrying in {delay} seconds...")
+            time.sleep(delay)
+            retries += 1
+            delay *= 2  # Exponentiell steigender Timer: 5, 10, 20, 40, ...
+    st.error("Failed to connect to the database after multiple attempts.")
+    return None
+
+

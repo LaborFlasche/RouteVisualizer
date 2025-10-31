@@ -1,6 +1,6 @@
 import streamlit as st
-from src.database.connect_db import get_current_db_instance
-from src.database.sql_querys import PostgresQueries
+from src.database.connect_db import get_db_connection
+from src.database.sql_querys import SQLQueries
 
 
 # Ensure session state key exists
@@ -12,7 +12,9 @@ class LoginPage:
         self.setup_page_layout()
         self.logo_url = logo_url
         # Hole gecachte Connection
-        self.db = get_current_db_instance()
+        self.db = get_db_connection()
+        self.conn = self.db.get_current_connection()
+        st.session_state.db_instance = self.conn
 
     def setup_page_layout(self):
         st.markdown("""
@@ -44,16 +46,18 @@ class LoginPage:
                 return
 
             try:
-                response = self.db.run_query(
-                    PostgresQueries.GET_USER_BY_NAME_AND_PASSWORD,
-                    username=username,
-                    password=password
+                cursor = self.conn.cursor()
+                cursor.execute(
+                    SQLQueries.GET_USER_BY_NAME_and_PASSWORD.get_query(),
+                    (username, password)
                 )
-                result = response.data[0] if response.data else None
+                result = cursor.fetchone()
+                cursor.close()
+
                 if result:
                     st.session_state.logged_in = True
                     st.session_state.username = username
-                    st.session_state.user_id = int(result["id"])
+                    st.session_state.user_id = int(result[0])
                     st.rerun()
                 else:
                     st.error("Ungültiger Benutzername oder Passwort.")
@@ -68,5 +72,3 @@ class LoginPage:
 
 login = LoginPage()
 login.run()
-
-
